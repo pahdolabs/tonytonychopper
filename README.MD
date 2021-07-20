@@ -1,7 +1,10 @@
-redis support: exec multi
 
 Completed:
 connect
+multi
+watch
+exec
+
 set
 get
 keys
