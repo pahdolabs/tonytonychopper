@@ -32,6 +32,28 @@ void Chopper::connect(const String &host, int port)
     });
 }
 
+void Chopper::multi()
+{
+    client.multi();
+}
+
+void Chopper::watch(const String &key) {
+    client.watch(std::string(key.utf8().get_data()));
+}
+
+Array Chopper::exec() {
+    Array ret;
+    client.exec([](cpp_redis::reply &reply) {
+        if (reply.is_error())
+        {
+            ERR_EXPLAIN("client.exec error!");
+        }
+        ret = redis_reply_to_array(reply);
+    });
+    client.sync_commit();
+    return ret;
+}
+
 void Chopper::set(const String &key, const String &value)
 {
 
@@ -414,14 +436,23 @@ Array Chopper::redis_reply_to_array(cpp_redis::reply &reply)
 {
     int len = reply.as_array().size();
     Array vals;
+    std::vector<cpp_redis::reply> data = reply.as_array();
 
     for (int i = 0; i < len; i++) {
-        if reply.as_array()[i].is_string() {
+        if (data[i].is_array()) {
+            Array nested = redis_reply_to_array(data[i]);
+            vals.append(nested);
+        }
+        if (data[i].is_string()) {
             std::string s = data[i].as_string();
             const char *stg = &s[0];
             vals.append(stg);
         }
-        if reply.as_array()[i].is_null() {
+        if (data[i].is_integer()) {
+            int i = data[i].as_integer();
+            vals.append(i);
+        }
+        if (data[i].is_null()) {
             Variant v;
             vals.append(v);
         }

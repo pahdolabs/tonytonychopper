@@ -20,7 +20,10 @@ public:
     void _init();
 
     void connect(const String& host="127.0.0.1", int port=6379);
-    
+    void multi();
+    void watch(const String& key);
+    Array exec();
+
     void set(const String& key, const String& value);
     String get(const String& key);
     int incrby(const String& key);
