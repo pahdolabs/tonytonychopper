@@ -1,9 +1,6 @@
-#include <Godot.hpp>
-#include <Reference.hpp>
+#include "chopper.h"
 
 using namespace godot;
-
-#include "chopper.h"
 
 Chopper::Chopper()
 {
@@ -616,7 +613,7 @@ std::vector<std::string> Chopper::godot_array_to_vector(const Array &arr) {
 
     for (int i = 0; i < max; i++)
     {
-        std::string s_key = std::string(String(static_cast<Variant>(arr[i])).utf8().get_data());
+        std::string s_key = std::string(String(arr[i]).utf8().get_data());
         ret[i] = s_key;
     }
 

@@ -358,15 +358,7 @@ if env['platform'] != "javascript":
 # tweak this if you want to use different folders, or more folders, to store your source code in.
 env.Append(CPPPATH=[
     'cpp_redis/includes/cpp_redis',
-    'cpp_redis/includes/cpp_redis/builders',
-    'cpp_redis/includes/cpp_redis/core',
-    'cpp_redis/includes/cpp_redis/helpers',
-    'cpp_redis/includes/cpp_redis/impl',
-    'cpp_redis/includes/cpp_redis/misc',
-    'cpp_redis/includes/cpp_redis/network',
     'cpp_redis/tacopie/includes/tacopie',
-    'cpp_redis/tacopie/includes/network',
-    'cpp_redis/tacopie/includes/utils',
     '.'
 ])
 sources = [

@@ -2,21 +2,20 @@
 #define GD_CHOPPER
 
 #include <Godot.hpp>
+#include <Reference.hpp>
 #include <cpp_redis>
 #include <iostream>
 #include <memory>
 
 namespace godot {
     class Chopper : public Reference {
-        GDCLASS(Chopper, Reference);
-
-    protected:
-        static void _register_methods();
+        GODOT_CLASS(Chopper, Reference);
 
     public:
         Chopper();
 
         void _init();
+        static void _register_methods();
 
         void connect(const String& host="127.0.0.1", int port=6379);
         void multi();
