@@ -27,7 +27,7 @@ void Chopper::connect(const String &host, int port)
         }
         else if (status == cpp_redis::client::connect_state::ok)
         {
-            emit_signal("callback_GDRedis_connect");
+            emit_signal("callback_Chopper_connect");
         }
     });
 }
@@ -43,7 +43,7 @@ void Chopper::watch(const String &key) {
 
 Array Chopper::exec() {
     Array ret;
-    client.exec([](cpp_redis::reply &reply) {
+    client.exec([this, &ret](cpp_redis::reply &reply) {
         if (reply.is_error())
         {
             ERR_EXPLAIN("client.exec error!");
@@ -98,7 +98,7 @@ int Chopper::incrby(const String &key, int incr) {
     int res;
     std::string stg_key = std::string(key.utf8().get_data());
 
-    client.incrby(stg_key, incr, [&value](cpp_redis::reply &reply){
+    client.incrby(stg_key, incr, [&res](cpp_redis::reply &reply){
         if (reply.is_error())
         {
             ERR_EXPLAIN("client.hdel error!");
@@ -161,7 +161,7 @@ Array Chopper::keys(const String &pattern) {
     Array keys;
     std::string stg_pattern = std::string(pattern.utf8().get_data());
 
-    client.keys(stg_pattern, [&value](cpp_redis:: reply & reply){
+    client.keys(stg_pattern, [this, &keys](cpp_redis:: reply & reply){
         if (reply.is_error())
         {
             ERR_EXPLAIN("client.keys error!");
@@ -211,7 +211,7 @@ String Chopper::hset(const String &key, const String &field, const String &value
     std::string stg_field = std::string(field.utf8().get_data());
     std::string stg_value = std::String(value.utf8().get_data());
 
-    client.hset(stg_key, stg_field, stg_value, [&value](cpp_redis::reply &reply){
+    client.hset(stg_key, stg_field, stg_value, [](cpp_redis::reply &reply){
         if (reply.is_error())
         {
             ERR_EXPLAIN("client.hset error!");
@@ -225,7 +225,7 @@ int Chopper::hincrby(const String &key, const String &field, int incr) {
     std::string stg_key = std::string(key.utf8().get_data());
     std::string stg_field = std::string(field.utf8().get_data());
 
-    client.hincrby(stg_key, stg_field, incr, [&value](cpp_redis::reply &reply){
+    client.hincrby(stg_key, stg_field, incr, [&res](cpp_redis::reply &reply){
         if (reply.is_error())
         {
             ERR_EXPLAIN("client.hdel error!");
@@ -245,7 +245,7 @@ String Chopper::hdel(const String &key, const String &field)
     std::string stg_key = std::string(key.utf8().get_data());
     std::string stg_field = std::string(field.utf8().get_data());
 
-    client.hdel(stg_key, stg_field, [&value](cpp_redis::reply &reply){
+    client.hdel(stg_key, stg_field, [](cpp_redis::reply &reply){
         if (reply.is_error())
         {
             ERR_EXPLAIN("client.hdel error!");
@@ -292,7 +292,7 @@ Array Chopper::hmget(const String &key, const Array &hkeys)
         keys_vector[i] = s_key;
     }
 
-    client.exists(stg_key, keys_vector, [&res](cpp_redis::reply &reply){
+    client.exists(stg_key, keys_vector, [this, &res](cpp_redis::reply &reply){
         if (reply.is_error())
         {
             ERR_EXPLAIN("client.hmget error!");
@@ -345,7 +345,7 @@ Array Chopper::hkeys(const String &key) {
     Array keys;
     std::string stg_key = std::string(key.utf8().get_data());
 
-    client.hkeys(stg_key, [&value](cpp_redis:: reply & reply){
+    client.hkeys(stg_key, [this, &keys](cpp_redis:: reply & reply){
         if (reply.is_error())
         {
             ERR_EXPLAIN("client.keys error!");
@@ -367,7 +367,7 @@ Array Chopper::hvals(const String &key) {
     Array vals;
     std::string stg_key = std::string(key.utf8().get_data());
 
-    client.hvals(stg_key, [&value](cpp_redis:: reply & reply){
+    client.hvals(stg_key, [this, &vals](cpp_redis:: reply & reply){
         if (reply.is_error())
         {
             ERR_EXPLAIN("client.keys error!");
@@ -391,7 +391,7 @@ int hlen(const String& key)
     int res;
     std::string stg_key = std::string(key.utf8().get_data());
 
-    client.hlen(stg_key, [&value](cpp_redis::reply &reply){
+    client.hlen(stg_key, [&res](cpp_redis::reply &reply){
         if (reply.is_error())
         {
             ERR_EXPLAIN("client.hlen error!");
@@ -415,7 +415,7 @@ bool hexists(const String& key, const String& field)
     std::string stg_key = std::string(key.utf8().get_data());
     std::string stg_field = std::string(field.utf8().get_data());
 
-    client.hexists(stg_key, stg_field, [&value](cpp_redis::reply &reply){
+    client.hexists(stg_key, stg_field, [&ret](cpp_redis::reply &reply){
         if (reply.is_error())
         {
             ERR_EXPLAIN("client.hexists error!");
