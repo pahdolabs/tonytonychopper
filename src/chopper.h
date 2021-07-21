@@ -7,20 +7,6 @@
 #include <memory>
 
 namespace godot {
-    #define GODOT_LOG(level, message)                                              \
-    switch (level)                                                                 \
-    {                                                                              \
-    case 0:                                                                        \
-        Godot::print(message);                                                     \
-        break;                                                                     \
-    case 1:                                                                        \
-        Godot::print_warning(message, BOOST_CURRENT_FUNCTION, __FILE__, __LINE__); \
-        break;                                                                     \
-    case 2:                                                                        \
-        Godot::print_error(message, BOOST_CURRENT_FUNCTION, __FILE__, __LINE__);   \
-        break;                                                                     \
-    }
-
     class Chopper : public Reference {
         GDCLASS(Chopper, Reference);
 
@@ -47,7 +33,7 @@ namespace godot {
         String hget(const String& key, const String& field);
         void hset(const String& key, const String& field, const String& value);
         int hincrby(const String& key, const String& field, int incr);
-        void hdel(const String& key, const String& field);
+        void hdel(const String& key, const Array& fields);
         Array hkeys(const String& key);
         Array hvals(const String& key);
         int hlen(const String& key);

@@ -22,7 +22,7 @@ void Chopper::connect(const String &host, int port)
     client.connect(stg_host, port, [this](const std::string &host, std::size_t port, cpp_redis::client::connect_state status){
         if (status == cpp_redis::client::connect_state::dropped)
         {
-            ERR_EXPLAIN("client disconnected!");
+            WARN_PRINT("client disconnected!");
         }
         else if (status == cpp_redis::client::connect_state::ok)
         {
@@ -48,7 +48,7 @@ Array Chopper::exec() {
     client.exec([this, &ret](cpp_redis::reply &reply) {
         if (reply.is_error())
         {
-            GODOT_LOG("client.exec error!", 2);
+            ERR_PRINT("client.exec error!");
         }
         ret = redis_reply_to_array(reply);
     });
@@ -65,7 +65,7 @@ void Chopper::set(const String &key, const String &value)
     client.set(stg_key, stg_value, [](cpp_redis::reply &reply){
         if (reply.is_error())
         {
-            ERR_EXPLAIN("client.set error!");
+            ERR_PRINT("client.set error!");
         }
     });
     client.sync_commit();
@@ -80,7 +80,7 @@ String Chopper::get(const String &key)
     client.get(stg_key, [&value](cpp_redis::reply &reply){
         if (reply.is_error())
         {
-            ERR_EXPLAIN("client.get error!");
+            ERR_PRINT("client.get error!");
         }
         else
         {
@@ -103,7 +103,7 @@ int Chopper::incrby(const String &key, int incr) {
     client.incrby(stg_key, incr, [&res](cpp_redis::reply &reply){
         if (reply.is_error())
         {
-            ERR_EXPLAIN("client.hdel error!");
+            ERR_PRINT("client.hdel error!");
         }
         if (reply.is_integer())
             {
@@ -115,15 +115,15 @@ int Chopper::incrby(const String &key, int incr) {
     return res;
 }
 
-void Chopper::del(const String &key)
+void Chopper::del(const Array &keys)
 {
 
-    std::string stg_key = std::string(key.utf8().get_data());
+    std::vector<std::string> stg_keys = godot_array_to_vector(keys);
 
-    client.del(stg_key, [](cpp_redis::reply &reply){
+    client.del(stg_keys, [](cpp_redis::reply &reply){
         if (reply.is_error())
         {
-            ERR_EXPLAIN("client.del error!");
+            ERR_PRINT("client.del error!");
         }
     });
     client.sync_commit();
@@ -133,19 +133,12 @@ int Chopper::exists(const Array &keys)
 {
 
     int res;
-    int max = keys.size();
-    std::vector<std::string> pairs_vector(max);
+    std::vector<std::string> stg_keys = godot_array_to_vector(keys);
 
-    for (int i = 0; i < max; i++)
-    {
-        std::string s_key = std::string(String(keys[i]).utf8().get_data());
-        pairs_vector[i] = s_key;
-    }
-
-    client.exists(pairs_vector, [&res](cpp_redis::reply &reply){
+    client.exists(stg_keys, [&res](cpp_redis::reply &reply){
             if (reply.is_error())
             {
-                ERR_EXPLAIN("client.exists error!");
+                ERR_PRINT("client.exists error!");
             }
             else
             {
@@ -166,7 +159,7 @@ Array Chopper::keys(const String &pattern) {
     client.keys(stg_pattern, [this, &keys](cpp_redis:: reply & reply){
         if (reply.is_error())
         {
-            ERR_EXPLAIN("client.keys error!");
+            ERR_PRINT("client.keys error!");
         }
         else
         {
@@ -191,7 +184,7 @@ String Chopper::hget(const String &key, const String &field)
     client.hget(stg_key, stg_field, [&value](cpp_redis::reply &reply){
         if (reply.is_error())
         {
-            ERR_EXPLAIN("client.hget error!");
+            ERR_PRINT("client.hget error!");
         }
         else
         {
@@ -207,7 +200,7 @@ String Chopper::hget(const String &key, const String &field)
     return value;
 }
 
-String Chopper::hset(const String &key, const String &field, const String &value)
+void Chopper::hset(const String &key, const String &field, const String &value)
 {
     std::string stg_key = std::string(key.utf8().get_data());
     std::string stg_field = std::string(field.utf8().get_data());
@@ -216,7 +209,7 @@ String Chopper::hset(const String &key, const String &field, const String &value
     client.hset(stg_key, stg_field, stg_value, [](cpp_redis::reply &reply){
         if (reply.is_error())
         {
-            ERR_EXPLAIN("client.hset error!");
+            ERR_PRINT("client.hset error!");
         }
     });
     client.sync_commit();
@@ -230,7 +223,7 @@ int Chopper::hincrby(const String &key, const String &field, int incr) {
     client.hincrby(stg_key, stg_field, incr, [&res](cpp_redis::reply &reply){
         if (reply.is_error())
         {
-            ERR_EXPLAIN("client.hdel error!");
+            ERR_PRINT("client.hincrby error!");
         }
         if (reply.is_integer())
             {
@@ -245,12 +238,12 @@ int Chopper::hincrby(const String &key, const String &field, int incr) {
 void Chopper::hdel(const String &key, const Array &fields)
 {
     std::string stg_key = std::string(key.utf8().get_data());
-    std::string stg_field = std::string(field.utf8().get_data());
+    std::vector<std::string> stg_fields = godot_array_to_vector(fields);
 
-    client.hdel(stg_key, stg_field, [](cpp_redis::reply &reply){
+    client.hdel(stg_key, stg_fields, [](cpp_redis::reply &reply){
         if (reply.is_error())
         {
-            ERR_EXPLAIN("client.hdel error!");
+            ERR_PRINT("client.hdel error!");
         }
     });
     client.sync_commit();
@@ -274,7 +267,7 @@ void Chopper::hmset(const String &key, const Dictionary &pairs){
     client.hmset(stg_key, pairs_vector, [](cpp_redis::reply &reply){
         if (reply.is_error())
         {
-            ERR_EXPLAIN("client.hmset error!");
+            ERR_PRINT("client.hmset error!");
         }
     });
     client.sync_commit();
@@ -286,18 +279,12 @@ Array Chopper::hmget(const String &key, const Array &hkeys)
     Array res;
     int max = hkeys.size();
     std::string stg_key = std::string(key.utf8().get_data());
-    std::vector<std::string> keys_vector(max);
+    std::vector<std::string> keys_vector = godot_array_to_vector(hkeys);
 
-    for (int i = 0; i < max; i++)
-    {
-        std::string s_key = std::string(String(hkeys[i]).utf8().get_data());
-        keys_vector[i] = s_key;
-    }
-
-    client.exists(stg_key, keys_vector, [this, &res](cpp_redis::reply &reply){
+    client.hmget(stg_key, keys_vector, [this, &res](cpp_redis::reply &reply){
         if (reply.is_error())
         {
-            ERR_EXPLAIN("client.hmget error!");
+            ERR_PRINT("client.hmget error!");
         }
         else
         {
@@ -320,7 +307,7 @@ Dictionary Chopper::hgetall(const String &key)
     client.hgetall(stg_key, [this, &dict](cpp_redis::reply &reply){
         if (reply.is_error())
         {
-            ERR_EXPLAIN("client.hgetall error!");
+            ERR_PRINT("client.hgetall error!");
         }
         else
         {
@@ -350,7 +337,7 @@ Array Chopper::hkeys(const String &key) {
     client.hkeys(stg_key, [this, &keys](cpp_redis:: reply & reply){
         if (reply.is_error())
         {
-            ERR_EXPLAIN("client.keys error!");
+            ERR_PRINT("client.keys error!");
         }
         else
         {
@@ -359,7 +346,7 @@ Array Chopper::hkeys(const String &key) {
                 keys = redis_reply_to_array(reply);
             }
         }
-    })
+    });
 
     client.sync_commit();
     return keys;
@@ -372,7 +359,7 @@ Array Chopper::hvals(const String &key) {
     client.hvals(stg_key, [this, &vals](cpp_redis:: reply & reply){
         if (reply.is_error())
         {
-            ERR_EXPLAIN("client.keys error!");
+            ERR_PRINT("client.keys error!");
         }
         else
         {
@@ -381,7 +368,7 @@ Array Chopper::hvals(const String &key) {
                 vals = redis_reply_to_array(reply);
             }
         }
-    })
+    });
 
     client.sync_commit();
     return vals;
@@ -396,7 +383,7 @@ int Chopper::hlen(const String& key)
     client.hlen(stg_key, [&res](cpp_redis::reply &reply){
         if (reply.is_error())
         {
-            ERR_EXPLAIN("client.hlen error!");
+            ERR_PRINT("client.hlen error!");
         }
         else
         {
@@ -420,7 +407,7 @@ bool Chopper::hexists(const String& key, const String& field)
     client.hexists(stg_key, stg_field, [&ret](cpp_redis::reply &reply){
         if (reply.is_error())
         {
-            ERR_EXPLAIN("client.hexists error!");
+            ERR_PRINT("client.hexists error!");
         }
         else
         {
@@ -629,7 +616,7 @@ std::vector<std::string> Chopper::godot_array_to_vector(const Array &arr) {
 
     for (int i = 0; i < max; i++)
     {
-        std::string s_key = std::string(String(arr[i]).utf8().get_data());
+        std::string s_key = std::string(String(static_cast<Variant>(arr[i])).utf8().get_data());
         ret[i] = s_key;
     }
 
