@@ -19,12 +19,12 @@ void Chopper::connect(const String &host, int port)
     //std::string stg_host = host.c_str();
     std::string stg_host = std::string(host.utf8().get_data());
 
-    client.connect(stg_host, port, [this](const std::string &host, std::size_t port, cpp_redis::client::connect_state status){
-        if (status == cpp_redis::client::connect_state::dropped)
+    client.connect(stg_host, port, [this](const std::string &host, std::size_t port, cpp_redis::connect_state status){
+        if (status == cpp_redis::connect_state::dropped)
         {
             WARN_PRINT("client disconnected!");
         }
-        else if (status == cpp_redis::client::connect_state::ok)
+        else if (status == cpp_redis::connect_state::ok)
         {
             emit_signal("callback_Chopper_connect");
         }
