@@ -385,7 +385,7 @@ Array Chopper::hvals(const String &key) {
     return vals;
 }
 
-int hlen(const String& key)
+int Chopper::hlen(const String& key)
 {
 
     int res;
@@ -408,7 +408,7 @@ int hlen(const String& key)
     return res;
 }
 
-bool hexists(const String& key, const String& field)
+bool Chopper::hexists(const String& key, const String& field)
 {
 
     bool ret;
@@ -430,6 +430,155 @@ bool hexists(const String& key, const String& field)
     });
     client.sync_commit();
     return ret;
+}
+
+// Transactions support
+
+void Chopper::tset(const String &key, const String &value)
+{
+    std::string stg_key = std::string(key.utf8().get_data());
+    std::string stg_value = std::string(value.utf8().get_data());
+
+    client.set(stg_key, stg_value);
+}
+
+void Chopper::tget(const String &key)
+{
+    std::string stg_key = std::string(key.utf8().get_data());
+
+    client.get(stg_key);
+}
+
+void Chopper::tincrby(const String &key, int incr) {
+    std::string stg_key = std::string(key.utf8().get_data());
+
+    client.incrby(stg_key, incr);
+}
+
+void Chopper::tdel(const String &key)
+{
+    std::string stg_key = std::string(key.utf8().get_data());
+
+    client.del(stg_key);
+}
+
+void Chopper::texists(const Array &keys)
+{
+    int max = keys.size();
+    std::vector<std::string> pairs_vector(max);
+
+    for (int i = 0; i < max; i++)
+    {
+        std::string s_key = std::string(String(keys[i]).utf8().get_data());
+        pairs_vector[i] = s_key;
+    }
+
+    client.exists(pairs_vector);
+}
+
+void Chopper::tkeys(const String &pattern) {
+    std::string stg_pattern = std::string(pattern.utf8().get_data());
+
+    client.keys(stg_pattern);
+}
+
+void Chopper::thget(const String &key, const String &field)
+{
+    std::string stg_key = std::string(key.utf8().get_data());
+    std::string stg_field = std::string(field.utf8().get_data());
+
+    client.hget(stg_key, stg_field);
+}
+
+void Chopper::thset(const String &key, const String &field, const String &value)
+{
+    std::string stg_key = std::string(key.utf8().get_data());
+    std::string stg_field = std::string(field.utf8().get_data());
+    std::string stg_value = std::String(value.utf8().get_data());
+
+    client.hset(stg_key, stg_field, stg_value);
+}
+
+void Chopper::thincrby(const String &key, const String &field, int incr) {
+    std::string stg_key = std::string(key.utf8().get_data());
+    std::string stg_field = std::string(field.utf8().get_data());
+
+    client.hincrby(stg_key, stg_field, incr);
+}
+
+void Chopper::thdel(const String &key, const String &field)
+{
+    std::string stg_key = std::string(key.utf8().get_data());
+    std::string stg_field = std::string(field.utf8().get_data());
+
+    client.hdel(stg_key, stg_field);
+}
+
+void Chopper::thmset(const String &key, const Dictionary &pairs){
+    int max = pairs.size();
+    std::string stg_key = std::string(key.utf8().get_data());
+    Array keys_pairs = pairs.keys();
+    std::vector<std::pair<std::string, std::string> > pairs_vector(max);
+
+    for (int i = 0; i < max; i++)
+    {
+        std::string s_key = std::string(String(keys_pairs[i]).utf8().get_data());
+        std::string s_value = std::string(String(pairs[keys_pairs[i]]).utf8().get_data());
+
+        pairs_vector[i] = std::make_pair(s_key, s_value);
+    }
+
+    client.hmset(stg_key, pairs_vector);
+}
+
+void Chopper::thmget(const String &key, const Array &hkeys)
+{
+
+    int max = hkeys.size();
+    std::string stg_key = std::string(key.utf8().get_data());
+    std::vector<std::string> keys_vector(max);
+
+    for (int i = 0; i < max; i++)
+    {
+        std::string s_key = std::string(String(hkeys[i]).utf8().get_data());
+        keys_vector[i] = s_key;
+    }
+
+    client.exists(stg_key, keys_vector);
+})
+
+void Chopper::thgetall(const String &key)
+{
+    std::string stg_key = std::string(key.utf8().get_data());
+
+    client.hgetall(stg_key);
+}
+
+void Chopper::thkeys(const String &key) {
+    std::string stg_key = std::string(key.utf8().get_data());
+
+    client.hkeys(stg_key);
+}
+
+void Chopper::thvals(const String &key) {
+    std::string stg_key = std::string(key.utf8().get_data());
+
+    client.hvals(stg_key);
+}
+
+void Chopper::thlen(const String& key)
+{
+    std::string stg_key = std::string(key.utf8().get_data());
+
+    client.hlen(stg_key);
+}
+
+void Chopper::thexists(const String& key, const String& field)
+{
+    std::string stg_key = std::string(key.utf8().get_data());
+    std::string stg_field = std::string(field.utf8().get_data());
+
+    client.hexists(stg_key, stg_field);
 }
 
 Array Chopper::redis_reply_to_array(cpp_redis::reply &reply)
@@ -502,6 +651,25 @@ static void Chopper::_register_methods()
     register_method("hmset", &Chopper::hmset);
     register_method("hmget", &Chopper::hmget);
     register_method("hgetall", &Chopper::hgetall);
+
+    register_method("tset", &Chopper::tset);
+    register_method("tget", &Chopper::tget);
+    register_method("tincrby", &Chopper::tincrby);
+    register_method("tdel", &Chopper::tdel);
+    register_method("texists", &Chopper::texists);
+    register_method("tkeys", &Chopper::tkeys);
+
+    register_method("thget", &Chopper::thget);
+    register_method("thset", &Chopper::thset);
+    register_method("thincrby", &Chopper::thincrby);
+    register_method("thdel", &Chopper::thdel);
+    register_method("thkeys", &Chopper::thkeys);
+    register_method("thvals", &Chopper::thvals);
+    register_method("thlen", &Chopper::thlen);
+    register_method("thexists", &Chopper::thexists);
+    register_method("thmset", &Chopper::thmset);
+    register_method("thmget", &Chopper::thmget);
+    register_method("thgetall", &Chopper::thgetall);
 }
 
 /** GDNative Initialize **/

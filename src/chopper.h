@@ -43,6 +43,26 @@ public:
     Array hmget(const String& key, const Array& hkeys);
     Dictionary hgetall(const String& key);
 
+    // Transaction support
+    void tset(const String& key, const String& value);
+    void tget(const String& key);
+    void tincrby(const String& key);
+    void tdel(const String& key);
+    void texists(const Array& keys);
+    void tkeys(const String& pattern);
+    
+    void thget(const String& key, const String& field);
+    void thset(const String& key, const String& field, const String& value);
+    void thincrby(const String& key, const String& field, int incr);
+    void thdel(const String& key, const String& field);
+    void thkeys(const String& key);
+    void thvals(const String& key);
+    void thlen(const String& key);
+    void thexists(const String& key, const String& field);
+    void thmset(const String& key, const Dictionary& pairs);
+    void thmget(const String& key, const Array& hkeys);
+    void thgetall(const String& key);
+
 private:
     cpp_redis::client client;
     std::vector<std::pair<std::string, std::string>> redis_reply_to_pairs_vector(cpp_redis::reply& records);
