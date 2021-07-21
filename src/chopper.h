@@ -5,7 +5,20 @@
 #include <iostream>
 #include <memory>
 
-namespace godot;
+namespace godot {
+    #define GODOT_LOG(level, message)                                              \
+    switch (level)                                                                 \
+    {                                                                              \
+    case 0:                                                                        \
+        Godot::print(message);                                                     \
+        break;                                                                     \
+    case 1:                                                                        \
+        Godot::print_warning(message, BOOST_CURRENT_FUNCTION, __FILE__, __LINE__); \
+        break;                                                                     \
+    case 2:                                                                        \
+        Godot::print_error(message, BOOST_CURRENT_FUNCTION, __FILE__, __LINE__);   \
+        break;                                                                     \
+    }
 
 class Chopper : public Reference {
 
