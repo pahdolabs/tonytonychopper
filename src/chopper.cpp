@@ -5,7 +5,7 @@ using namespace godot;
 
 #include "chopper.h"
 
-void Chopper::Chopper()
+Chopper::Chopper()
 {
     //! Enable logging
     cpp_redis::active_logger = std::unique_ptr<cpp_redis::logger>(new cpp_redis::logger);
@@ -22,7 +22,6 @@ void Chopper::connect(const String &host, int port)
     client.connect(stg_host, port, [this](const std::string &host, std::size_t port, cpp_redis::client::connect_state status){
         if (status == cpp_redis::client::connect_state::dropped)
         {
-            //std::cout << "client disconnected from " << host << ":" << port << std::endl;
             ERR_EXPLAIN("client disconnected!");
         }
         else if (status == cpp_redis::client::connect_state::ok)
@@ -37,8 +36,11 @@ void Chopper::multi()
     client.multi();
 }
 
-void Chopper::watch(const String &key) {
-    client.watch(std::string(key.utf8().get_data()));
+void Chopper::watch(const Array &keys)
+{
+    std::vector<std::string> keys_vector = godot_array_to_vector(keys);
+
+    client.watch(keys_vector);
 }
 
 Array Chopper::exec() {
@@ -46,7 +48,7 @@ Array Chopper::exec() {
     client.exec([this, &ret](cpp_redis::reply &reply) {
         if (reply.is_error())
         {
-            ERR_EXPLAIN("client.exec error!");
+            GODOT_LOG("client.exec error!", 2);
         }
         ret = redis_reply_to_array(reply);
     });
@@ -173,7 +175,7 @@ Array Chopper::keys(const String &pattern) {
                 keys = redis_reply_to_array(reply);
             }
         }
-    })
+    });
 
     client.sync_commit();
     return keys;
@@ -209,7 +211,7 @@ String Chopper::hset(const String &key, const String &field, const String &value
 {
     std::string stg_key = std::string(key.utf8().get_data());
     std::string stg_field = std::string(field.utf8().get_data());
-    std::string stg_value = std::String(value.utf8().get_data());
+    std::string stg_value = std::string(value.utf8().get_data());
 
     client.hset(stg_key, stg_field, stg_value, [](cpp_redis::reply &reply){
         if (reply.is_error())
@@ -240,7 +242,7 @@ int Chopper::hincrby(const String &key, const String &field, int incr) {
     return res;
 }
 
-String Chopper::hdel(const String &key, const String &field)
+void Chopper::hdel(const String &key, const Array &fields)
 {
     std::string stg_key = std::string(key.utf8().get_data());
     std::string stg_field = std::string(field.utf8().get_data());
@@ -307,7 +309,7 @@ Array Chopper::hmget(const String &key, const Array &hkeys)
     });
     client.sync_commit();
     return res;
-})
+}
 
 Dictionary Chopper::hgetall(const String &key)
 {
@@ -455,25 +457,18 @@ void Chopper::tincrby(const String &key, int incr) {
     client.incrby(stg_key, incr);
 }
 
-void Chopper::tdel(const String &key)
+void Chopper::tdel(const Array &keys)
 {
-    std::string stg_key = std::string(key.utf8().get_data());
+    std::vector<std::string> stg_keys = godot_array_to_vector(keys);
 
-    client.del(stg_key);
+    client.del(stg_keys);
 }
 
 void Chopper::texists(const Array &keys)
 {
-    int max = keys.size();
-    std::vector<std::string> pairs_vector(max);
+    std::vector<std::string> stg_keys = godot_array_to_vector(keys);
 
-    for (int i = 0; i < max; i++)
-    {
-        std::string s_key = std::string(String(keys[i]).utf8().get_data());
-        pairs_vector[i] = s_key;
-    }
-
-    client.exists(pairs_vector);
+    client.exists(stg_keys);
 }
 
 void Chopper::tkeys(const String &pattern) {
@@ -494,7 +489,7 @@ void Chopper::thset(const String &key, const String &field, const String &value)
 {
     std::string stg_key = std::string(key.utf8().get_data());
     std::string stg_field = std::string(field.utf8().get_data());
-    std::string stg_value = std::String(value.utf8().get_data());
+    std::string stg_value = std::string(value.utf8().get_data());
 
     client.hset(stg_key, stg_field, stg_value);
 }
@@ -506,12 +501,12 @@ void Chopper::thincrby(const String &key, const String &field, int incr) {
     client.hincrby(stg_key, stg_field, incr);
 }
 
-void Chopper::thdel(const String &key, const String &field)
+void Chopper::thdel(const String &key, const Array &fields)
 {
     std::string stg_key = std::string(key.utf8().get_data());
-    std::string stg_field = std::string(field.utf8().get_data());
+    std::vector<std::string> stg_fields = godot_array_to_vector(fields);
 
-    client.hdel(stg_key, stg_field);
+    client.hdel(stg_key, stg_fields);
 }
 
 void Chopper::thmset(const String &key, const Dictionary &pairs){
@@ -544,8 +539,8 @@ void Chopper::thmget(const String &key, const Array &hkeys)
         keys_vector[i] = s_key;
     }
 
-    client.exists(stg_key, keys_vector);
-})
+    client.hmget(stg_key, keys_vector);
+}
 
 void Chopper::thgetall(const String &key)
 {
@@ -581,8 +576,7 @@ void Chopper::thexists(const String& key, const String& field)
     client.hexists(stg_key, stg_field);
 }
 
-Array Chopper::redis_reply_to_array(cpp_redis::reply &reply)
-{
+Array Chopper::redis_reply_to_array(cpp_redis::reply &reply) {
     int len = reply.as_array().size();
     Array vals;
     std::vector<cpp_redis::reply> data = reply.as_array();
@@ -629,7 +623,20 @@ std::vector<std::pair<std::string, std::string> > Chopper::redis_reply_to_pairs_
     return res;
 }
 
-static void Chopper::_register_methods()
+std::vector<std::string> Chopper::godot_array_to_vector(const Array &arr) {
+    int max = arr.size();
+    std::vector<std::string> ret(max);
+
+    for (int i = 0; i < max; i++)
+    {
+        std::string s_key = std::string(String(arr[i]).utf8().get_data());
+        ret[i] = s_key;
+    }
+
+    return ret;
+}
+
+void Chopper::_register_methods()
 {
     register_method("connect", &Chopper::connect);
 
@@ -670,24 +677,4 @@ static void Chopper::_register_methods()
     register_method("thmset", &Chopper::thmset);
     register_method("thmget", &Chopper::thmget);
     register_method("thgetall", &Chopper::thgetall);
-}
-
-/** GDNative Initialize **/
-extern "C" void GDN_EXPORT godot_gdnative_init(godot_gdnative_init_options *o)
-{
-    godot::Godot::gdnative_init(o);
-}
-
-/** GDNative Terminate **/
-extern "C" void GDN_EXPORT godot_gdnative_terminate(godot_gdnative_terminate_options *o)
-{
-    godot::Godot::gdnative_terminate(o);
-}
-
-/** NativeScript Initialize **/
-extern "C" void GDN_EXPORT godot_nativescript_init(void *handle)
-{
-    godot::Godot::nativescript_init(handle);
-
-    godot::register_class<Chopper>();
 }
