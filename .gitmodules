@@ -1,0 +1,6 @@
+[submodule "cpp_redis"]
+	path = cpp_redis
+	url = git@github.com:cpp-redis/cpp_redis.git
+[submodule "godot-cpp"]
+	path = godot-cpp
+	url = git@github.com:godotengine/godot-cpp.git
